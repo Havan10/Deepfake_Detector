@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepScan AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0f172a; height: 100vh; overflow: hidden; color: white; display: flex; align-items: center; justify-content: center; font-family: sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body>
+    <div class="glass w-full max-w-lg p-6 rounded-3xl shadow-2xl flex flex-col items-center">
+        <h1 class="text-2xl font-black text-blue-500 mb-4">DeepScan AI</h1>
+
+        <div id="ui-container" class="w-full space-y-4">
+            <video id="vPreview" class="hidden w-full max-h-48 rounded-xl bg-black border border-slate-700" controls></video>
+
+            <div id="dropzone" class="border-2 border-dashed border-slate-700 rounded-xl p-10 text-center hover:border-blue-500 cursor-pointer bg-slate-800/30">
+                <input type="file" id="vInput" class="hidden" accept="video/*">
+                <div onclick="document.getElementById('vInput').click()">
+                    <p class="font-bold">Click to Upload Video</p>
+                    <p class="text-xs text-slate-500 mt-1">Analysis will appear below</p>
+                </div>
+            </div>
+
+            <div id="loading" class="hidden text-center">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                <p class="text-xs text-blue-400 mt-2 font-bold animate-pulse">AI ANALYZING...</p>
+            </div>
+
+            <div id="resultBox" class="hidden p-4 rounded-xl bg-slate-900/80 border border-slate-700 flex justify-around items-center">
+                <div class="text-center">
+                    <p class="text-[10px] uppercase text-slate-500">Verdict</p>
+                    <span id="label" class="text-xl font-black"></span>
+                </div>
+                <div class="text-center">
+                    <p class="text-[10px] uppercase text-slate-500">Confidence</p>
+                    <span id="prob" class="text-xl font-mono font-bold"></span>
+                </div>
+                <button onclick="location.reload()" class="text-blue-400 hover:text-white text-xs underline">RESET</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById('vInput');
+        const preview = document.getElementById('vPreview');
+        const dropzone = document.getElementById('dropzone');
+        const loading = document.getElementById('loading');
+        const resultBox = document.getElementById('resultBox');
+
+        input.onchange = async () => {
+            if (!input.files[0]) return;
+
+            // 1. Show Preview
+            preview.src = URL.createObjectURL(input.files[0]);
+            preview.classList.remove('hidden');
+            dropzone.classList.add('hidden');
+            loading.classList.remove('hidden');
+
+            // 2. Upload
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+
+            const res = await fetch('/analyze', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            // 3. Display Results
+            loading.classList.add('hidden');
+            resultBox.classList.remove('hidden');
+            
+            const labelEl = document.getElementById('label');
+            labelEl.innerText = data.result;
+            labelEl.className = data.result === 'FAKE' ? 'text-xl font-black text-red-500' : 'text-xl font-black text-green-500';
+            document.getElementById('prob').innerText = data.confidence;
+        };
+    </script>
+</body>
+</html>
